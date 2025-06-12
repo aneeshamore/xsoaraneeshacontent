@@ -18,7 +18,7 @@ from pytest import raises, mark
 
 import CommonServerPython
 import demistomock as demisto
-from CommonServerPython import (find_and_remove_sensitive_text, xml2json, json2xml, entryTypes, formats, tableToMarkdown, underscoreToCamelCase,
+from CommonServerPython import (xml2json, json2xml, entryTypes, formats, tableToMarkdown, underscoreToCamelCase,
                                 flattenCell, date_to_timestamp, datetime, timedelta, camelize, pascalToSpace, argToList,
                                 remove_nulls_from_dictionary, is_error, get_error, hash_djb2, fileResult, is_ip_valid,
                                 get_demisto_version, IntegrationLogger, parse_date_string, IS_PY3, PY_VER_MINOR, DebugLogger,
@@ -32,7 +32,7 @@ from CommonServerPython import (find_and_remove_sensitive_text, xml2json, json2x
                                 response_to_context, is_integration_command_execution, is_xsiam_or_xsoar_saas, is_xsoar,
                                 is_xsoar_on_prem, is_xsoar_hosted, is_xsoar_saas, is_xsiam, send_data_to_xsiam,
                                 censor_request_logs, censor_request_logs, safe_sleep, get_server_config, b64_decode,
-                                get_engine_base_url, is_integration_instance_running_on_engine
+                                get_engine_base_url, is_integration_instance_running_on_engine, find_and_remove_sensitive_text
                                 )
 
 EVENTS_LOG_ERROR = \
@@ -9754,10 +9754,30 @@ def test_create_clickable_test_wrong_text_value():
         "GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\nAuthorization: Bearer <XX_REPLACED>\\r\\n"
     ),
     (
+        "GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\nAuthorization: JWT token123\\r\\n",
+        "GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\nAuthorization: JWT <XX_REPLACED>\\r\\n"
+    ),
+    (
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\nAuthorization: LOG token:signature=\\r\\n'",
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\nAuthorization: LOG <XX_REPLACED>\\r\\n'"
+    ),
+    (
         "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\n'",
         str("send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\n'")
     ),
-])
+    (
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\apiKey: 1234\\r\\n'",
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\apiKey: <XX_REPLACED>\\r\\n'"
+    ),
+    (
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\credentials: {'good':'day'}\\r\\n'",
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\credentials: <XX_REPLACED>\\r\\n'"
+    ),
+    (
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\client_name: client\\r\\n'",
+        "send: b'GET /api/v1/users HTTP/1.1\\r\\nHost: example.com\\r\\client_name: <XX_REPLACED>\\r\\n'"
+    ),],
+    ids=["Bearer", "Cookie", "Authorization", "Bearer", "JWT", "LOG prefix", "No change", "Key", "credential", "client"],)
 def test_censor_request_logs(request_log, expected_output):
     """
     Given:
@@ -9767,6 +9787,8 @@ def test_censor_request_logs(request_log, expected_output):
         case 3: A request log with a sensitive data under the 'Authorization' header, but with no 'Bearer' prefix.
         case 4: A request log with a sensitive data under the 'Authorization' header, but with no 'send b' prefix at the beginning.
         case 5: A request log with no sensitive data.
+        case 6: A request log with a sensitive data under the 'Authorization' header, with a "LOG" prefix (which used in cases 
+                like HMAC signature authentication).
     When:
         Running censor_request_logs function.
     Then:
@@ -9994,6 +10016,7 @@ def test_get_engine_base_url(mocker):
     mocker.patch.object(demisto, 'internalHttpRequest', return_value=mock_response)
     res = get_engine_base_url('1111')
     assert res == '11.111.111.33:443'
+    
 
 
 @pytest.mark.parametrize('input_text, pattern, expected_output, call_count', [
@@ -10006,14 +10029,11 @@ def test_find_and_remove_sensitive_text__found_onc(input_text, pattern, expected
     """
     Given:
     - Input text that includes sensitive information.
-
     When:
     - Invoking the `find_and_remove_sensitive_text` method with a regex pattern to search for sensitive information.
-
     Then:
     - Verify that the function responsible for removing sensitive information from the logs is called with the sensitive data as an argument.
     - Verify that the function is called the correct number of times.
-
     """
     input_text = 'invalid_grant: java.security.SignatureException: Invalid signature for token: 1234'
     mock_remove_from_logs = mocker.patch('CommonServerPython.add_sensitive_log_strs', return_value=None)
@@ -10031,10 +10051,8 @@ def test_find_and_remove_sensitive_text__found_multiple(pattern, expected_output
     """
     Given:
     - Input text that includes sensitive information.
-
     When:
     - Invoking the `find_and_remove_sensitive_text` method with a regex pattern to search for a sensitive information.
-
     Then:
         verify that the function responsible for removing sensitive information from the logs is called with the sensitive data as an argument.
         verify that the function is called the correct number of times.
@@ -10051,10 +10069,8 @@ def test_find_and_remove_sensitive_text__not_found(mocker):
     """
     Given:
     - Input text that does not contain any sensitive information (e.g., no word following "token:").
-
     When:
     - Invoking the `find_and_remove_sensitive_text` method with a regex pattern to search for a sensitive information (the word following "token:").
-
     Then:
     - Ensure that the function does not remove anything from the logs.
     """
