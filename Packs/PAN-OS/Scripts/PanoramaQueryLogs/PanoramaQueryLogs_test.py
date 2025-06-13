@@ -1,5 +1,6 @@
 from pytest_mock import MockerFixture
 
+
 def test_main(mocker: MockerFixture):
     """
     Given:
@@ -18,11 +19,11 @@ def test_main(mocker: MockerFixture):
         "timeout": "120",
         "interval_in_seconds": "10"
     }
-    
+
     mocker.patch("PanoramaQueryLogs.demisto.args", return_value=args)
     mock_execute_polling_command = mocker.patch("PanoramaQueryLogs.execute_polling_command", return_value=[])
-    
+
     main()
-    
+
     assert mock_execute_polling_command.call_count == 1
     assert mock_execute_polling_command.call_args[0] == ("pan-os-query-logs", args)
