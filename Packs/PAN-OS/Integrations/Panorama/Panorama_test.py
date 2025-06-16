@@ -3338,6 +3338,8 @@ class TestTopology:
         # Because it's panorama, should be; [shared, device-group, template]
         assert len(result) == 3
 
+    def test_panorama_devices(self):
+        assert mock_panorama
 
 class TestUtilityFunctions:
     """Tests all the utility fucntions like dataclass_to_dict, etc"""
@@ -8494,3 +8496,193 @@ def test_show_jobs_id_not_found(patched_run_op_command):
 
     with pytest.raises(DemistoException, match="The given ID 23 is not found in all devices of the topology."):
         UniversalCommand.show_jobs(topology=MockTopology(), id=23)
+        
+
+@patch('Panorama.run_op_command')
+def test_pan_os_get_certificate_info_command(mocker: MockerFixture, requests_mock: RequestsMock):
+    """
+    Test pan-os-get-certificate-expiration command.
+    
+    This test validates that:
+    1. The command correctly fetches certificates from Panorama devices
+    2. The command correctly fetches certificates from Firewall devices
+    3. The command correctly fetches predefined certificates
+    4. Certificate expiration status is correctly determined
+    5. The command returns appropriate output
+    """
+    import Panorama
+    from Panorama import pan_os_get_certificate_info_command
+    from datetime import datetime, timedelta
+    
+    # Set
+    Panorama.URL = "https://1.1.1.1:443/api/"
+        
+    # Mock Panorama device
+    mock_panorama = MagicMock()
+    mock_panorama.hostname = "panorama.test"
+    
+    # Mock Template and TemplateStack
+    mock_template = MagicMock()
+    mock_template.devices = []
+    
+    mock_template_stack = MagicMock()
+    mock_template_stack.devices = [MOCK_FIREWALL_1_SERIAL]
+    
+    # Mock Firewall device
+    mock_firewall = MagicMock()
+    mock_firewall.serial = MOCK_FIREWALL_1_SERIAL
+    mock_firewall.parent = MagicMock(get=lambda x: "panorama.test" if x == "hostname" else None)
+    
+    # Mock Topology
+    mock_topology = MagicMock()
+    mock_topology.panorama_devices.return_value = [mock_panorama]
+    mock_topology.firewall_devices.return_value = [mock_firewall]
+    # mock_get_topology.return_value = mock_topology
+    
+    # Setup dates for certificate expiration
+    current_date = datetime.now()
+    expired_date = (current_date - timedelta(days=10)).strftime("%b %d %H:%M:%S %Y GMT")
+    expiring_30_days = (current_date + timedelta(days=20)).strftime("%b %d %H:%M:%S %Y GMT")
+    expiring_60_days = (current_date + timedelta(days=50)).strftime("%b %d %H:%M:%S %Y GMT")
+    expiring_90_days = (current_date + timedelta(days=80)).strftime("%b %d %H:%M:%S %Y GMT")
+    valid_date = (current_date + timedelta(days=100)).strftime("%b %d %H:%M:%S %Y GMT")
+    
+    # Mock Panorama SHOW_CONFIG_RUNNING response
+    panorama_config_xml = f'''
+    <response status="success">
+        <result>
+            <template>
+                <certificate>
+                    <entry name="cert1">
+                        <not-valid-after>{expired_date}</not-valid-after>
+                        <subject>CN=cert1.test</subject>
+                    </entry>
+                    <entry name="cert2">
+                        <not-valid-after>{expiring_30_days}</not-valid-after>
+                        <subject>CN=cert2.test</subject>
+                    </entry>
+                </certificate>
+            </template>
+        </result>
+    </response>
+    '''
+    
+    # Mock Firewall SHOW_CONFIG_PUSHED_TEMPLATE response
+    firewall_pushed_xml = f'''
+    <response status="success">
+        <result>
+            <certificate>
+                <entry name="cert3">
+                    <not-valid-after>{expiring_60_days}</not-valid-after>
+                    <subject>CN=cert3.test</subject>
+                </entry>
+            </certificate>
+        </result>
+    </response>
+    '''
+    
+    # Mock Firewall SHOW_LOCAL_CERTS response
+    firewall_local_xml = f'''
+    <response status="success">
+        <result>
+            <entry name="cert4">
+                <not-valid-after>{expiring_90_days}</not-valid-after>
+                <subject>CN=cert4.test</subject>
+            </entry>
+            <entry name="cert5">
+                <not-valid-after>{valid_date}</not-valid-after>
+                <subject>CN=cert5.test</subject>
+            </entry>
+        </result>
+    </response>
+    '''
+    
+    # Mock predefined certificates response
+    predefined_xml = f'''
+    <response status="success">
+        <result>
+            <certificate>
+                <entry name="predefined_cert1">
+                    <not-valid-after>{valid_date}</not-valid-after>
+                    <subject>CN=predefined_cert1.test</subject>
+                </entry>
+            </certificate>
+        </result>
+    </response>
+    '''
+    
+    # Configure mocks for Template and TemplateStack
+    with patch('Panorama.Template') as mock_template_class:
+        with patch('Panorama.TemplateStack') as mock_template_stack_class:
+            mock_template_class.refreshall.return_value = [mock_template]
+            mock_template_stack_class.refreshall.return_value = [mock_template_stack]
+            
+            # Configure run_op_command mock responses
+            def run_op_command_side_effect(device, command):
+                if device == mock_panorama and command == "show config running":
+                    return ET.fromstring(panorama_config_xml)
+                elif device == mock_firewall and command == "show config pushed-template":
+                    return ET.fromstring(firewall_pushed_xml)
+                elif device == mock_firewall and command == "request certificate show":
+                    return ET.fromstring(firewall_local_xml)
+                return None
+            
+            mock_run_op_command.side_effect = run_op_command_side_effect
+            
+            # Configure requests.get mock response
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = predefined_xml
+            mock_requests_get.return_value = mock_response
+            
+            # Patch global variables used in the function
+            with patch('Panorama.URL', 'https://panorama.test:443/api/'):
+                with patch('Panorama.API_KEY', 'test_api_key'):
+                    with patch('Panorama.USE_SSL', False):
+                        with patch('Panorama.DEVICE_GROUP', ''):
+                            # Execute command
+                            result = pan_os_get_certificate_info_command(mock_topology, {})
+                            
+                            # Validate results
+                            assert result.outputs_prefix == 'Panorama.Certificate'
+                            assert len(result.outputs) == 6  # Total number of certificates
+                            
+                            # Verify expiration statuses
+                            expiration_statuses = [cert['expiration_status'] for cert in result.outputs]
+                            assert 'Expired' in expiration_statuses
+                            assert 'Expiring in 30 days' in expiration_statuses
+                            assert 'Expiring in 60 days' in expiration_statuses
+                            assert 'Expiring in 90 days' in expiration_statuses
+                            assert 'Valid' in expiration_statuses
+                            
+                            # Verify certificate types
+                            cert_types = [cert['cert_type'] for cert in result.outputs]
+                            assert 'Pushed' in cert_types
+                            assert 'Local' in cert_types
+                            assert 'Predefined' in cert_types
+                            
+                            # Test with show_expired_only filter
+                            result_expired_only = pan_os_get_certificate_info_command(mock_topology, {'show_expired_only': 'true'})
+                            assert len(result_expired_only.outputs) == 1
+                            assert result_expired_only.outputs[0]['expiration_status'] == 'Expired'
+
+
+@patch('Panorama.run_op_command')
+@patch('Panorama.requests.get')
+def test_pan_os_get_certificate_info_command_no_certs(mock_topology, mock_requests_get, mock_run_op_command):
+    """
+    Test pan-os-get-certificate-expiration command when no certificates are found.
+    """
+    from Panorama import pan_os_get_certificate_info_command
+    
+    # Mock empty topology
+    mock_topology = MagicMock()
+    mock_topology.panorama_devices.return_value = []
+    mock_topology.firewall_devices.return_value = []
+    mock_get_topology.return_value = mock_topology
+    
+    # Configure requests.get mock response for empty predefined certs
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '<response status="success"><result></result></response>'
+    mock_requests_get.return_value = mock_response

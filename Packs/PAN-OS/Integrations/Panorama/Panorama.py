@@ -14594,6 +14594,201 @@ def pan_os_get_master_key_details_command() -> CommandResults:
         readable_output=human_readable,
     )
 
+def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> CommandResults:
+    """
+    Get certificate information from PAN-OS device
+
+    Args:
+        target: Command arguments
+
+    Returns:
+        CommandResults: Certificate information
+    """
+    CERT_DETAILS = []
+    SHOW_LOCAL_CERTS = "request certificate show"
+    SHOW_CONFIG_RUNNING = "show config running"
+    SHOW_CONFIG_PUSHED_TEMPLATE = "show config pushed-template"
+    PREDEFINED_CERTS_XPATH = "/config/predefined/certificate"
+
+    def expiration_status_check(cert_expiration: datetime) -> str:
+        now = datetime.now()
+        if cert_expiration < now:
+            return "Expired"
+        elif cert_expiration < now + timedelta(days=30):
+            return "Expiring in 30 days"
+        elif cert_expiration < now + timedelta(days=60):
+            return "Expiring in 60 days"
+        elif cert_expiration < now + timedelta(days=90):
+            return "Expiring in 90 days"
+        else:
+            return "Valid"
+
+    try:
+        panorama_devices = topology.panorama_devices()
+        if panorama_devices:
+            for device in panorama_devices:
+                templates = Template.refreshall(device)
+                template_stacks = TemplateStack.refreshall(device)
+
+                # 1. Get certs pushed from Panorama:
+                response_pushed = run_op_command(device, SHOW_CONFIG_RUNNING)
+
+                # Process pushed certificates
+                if response_pushed and hasattr(response_pushed, "get") and response_pushed.get("status") == "success":
+                    template_config = response_pushed.find(".//template")
+                    template_stack_config = response_pushed.find(".//template-stack")
+                    if template_config.find(".//certificate"):
+                        certificate = template_config.find(".//certificate")
+                        devices_using_certificate = [
+                            template.devices for template in templates if hasattr(template, "devices") if template.devices
+                        ]
+                    elif template_stack_config.find(".//certificate"):
+                        certificate = template_stack_config.find(".//certificate")
+                        devices_using_certificate = [
+                            template_stack.devices
+                            for template_stack in template_stacks
+                            if hasattr(template_stack, "devices")
+                            if template_stack.devices
+                        ]
+
+                    pushed_certs = certificate.findall(".//entry") if certificate else []
+                    demisto.debug(f"Found {len(pushed_certs)} pushed certificates")
+
+                    for cert in pushed_certs:
+                        not_valid_after = cert.find("not-valid-after")
+                        subject_elem = cert.find("subject")
+                        if not_valid_after is not None and not_valid_after.text is not None:
+                            cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
+                            expiration_status = expiration_status_check(cert_expiration)
+                        else:
+                            cert_expiration = None
+                            expiration_status = None
+                        CERT_DETAILS.append(
+                            {
+                                "name": cert.get("name"),
+                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
+                                "subject": subject_elem.text if subject_elem is not None else None,
+                                "device": device.hostname,
+                                "location": "Panorama",
+                                "expiration_status": expiration_status,
+                                "cert_type": "Pushed",
+                                "devices_using_certificate": devices_using_certificate[0]
+                                if len(devices_using_certificate) > 0
+                                else None,
+                            }
+                        )
+
+        firewall_devices = topology.firewall_devices()
+        if firewall_devices:
+            for device in firewall_devices:
+                # 1. Check if pushed certs were already obtained
+                if not panorama_devices:
+                    response_pushed = run_op_command(device, SHOW_CONFIG_PUSHED_TEMPLATE)
+
+                    # Process pushed certificates
+                    if response_pushed and hasattr(response_pushed, "get") and response_pushed.get("status") == "success":
+                        certificate = response_pushed.find(".//certificate")
+                        pushed_certs = certificate.findall(".//entry") if certificate else []
+                        demisto.debug(f"Found {len(pushed_certs)} pushed certificates")
+
+                        for cert in pushed_certs:
+                            not_valid_after = cert.find("not-valid-after")
+                            subject_elem = cert.find("subject")
+                            if not_valid_after is not None and not_valid_after.text is not None:
+                                cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
+                                expiration_status = expiration_status_check(cert_expiration)
+                            else:
+                                cert_expiration = None
+                                expiration_status = None
+
+                            CERT_DETAILS.append(
+                                {
+                                    "name": cert.get("name"),
+                                    "expiration_date": not_valid_after.text if not_valid_after is not None else None,
+                                    "subject": subject_elem.text if subject_elem is not None else "",
+                                    "device": device.parent.get("hostname") if device.parent else device.serial,
+                                    "location": "Panorama",
+                                    "expiration_status": expiration_status,
+                                    "cert_type": "Pushed",
+                                }
+                            )
+
+                # 2. Get local certs on each firewall
+                response_local = run_op_command(device, SHOW_LOCAL_CERTS)
+
+                # Process local certificates
+                if response_local and hasattr(response_local, "get") and response_local.get("status") == "success":
+                    local_certs = response_local.findall(".//entry")
+                    demisto.debug(f"Found {len(local_certs)} local certificates")
+                    for cert in local_certs:
+                        not_valid_after = cert.find("not-valid-after")
+                        subject_elem = cert.find("subject")
+                        if not_valid_after is not None and not_valid_after.text is not None:
+                            cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
+                            expiration_status = expiration_status_check(cert_expiration)
+                        else:
+                            cert_expiration = None
+                            expiration_status = None
+                        CERT_DETAILS.append(
+                            {
+                                "name": cert.get("name"),
+                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
+                                "subject": subject_elem.text if subject_elem is not None else None,
+                                "device": device.serial,
+                                "location": "Firewall",
+                                "expiration_status": expiration_status,
+                                "cert_type": "Local",
+                            }
+                        )
+
+        # 3. Get predefined certs
+        params = {"type": "config", "action": "get", "xpath": PREDEFINED_CERTS_XPATH, "cmd": "show predefined", "key": API_KEY}
+        response_predefined = requests.get(URL, params=params, verify=USE_SSL)
+        if response_predefined and response_predefined.status_code == 200:
+            root = ET.fromstring(response_predefined.text)
+            certificate = root.find(".//certificate")
+            predefined_certs = certificate.findall(".//entry") if certificate else []
+            demisto.debug(f"Found {len(predefined_certs)} predefined certificates")
+
+            for cert in predefined_certs:
+                not_valid_after = cert.find("not-valid-after")
+                subject_elem = cert.find("subject")
+                # Check and process certificate expiration
+                if not_valid_after is not None and not_valid_after.text is not None:
+                    cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
+                    expiration_status = expiration_status_check(cert_expiration)
+                else:
+                    cert_expiration = None
+                    expiration_status = None
+
+                CERT_DETAILS.append(
+                    {
+                        "name": cert.get("name"),
+                        "expiration_date": not_valid_after.text if not_valid_after is not None else None,
+                        "subject": subject_elem.text if subject_elem is not None else None,
+                        "device": URL.replace("https://", "").split(":")[0],
+                        "location": "Panorama" if DEVICE_GROUP else "Firewall",
+                        "expiration_status": expiration_status,
+                        "cert_type": "Predefined",
+                    }
+                )
+
+        readable_output = tableToMarkdown(
+            "Certificate Information",
+            CERT_DETAILS,
+            headers=["name", "device", "subject", "expiration", "expiration_status", "location", "cert_type"],
+            removeNull=True,
+        )
+        if args.get("show_expired_only"):
+            CERT_DETAILS = [cert for cert in CERT_DETAILS if cert.get("expiration_status") == "Expired"]
+        return CommandResults(
+            outputs_prefix="Panorama.Certificate",
+            outputs=CERT_DETAILS,
+            readable_output=readable_output if len(CERT_DETAILS) > 0 else "No certificates found",
+            raw_response=CERT_DETAILS,
+        )
+    except Exception as e:
+        raise Exception(f"Failed to get certificate information: {str(e)}")
 
 """ Fetch Incidents """
 
@@ -15792,6 +15987,9 @@ def main():  # pragma: no cover
             return_results(pan_os_update_master_key_command(args))
         elif command == "pan-os-get-master-key-details":
             return_results(pan_os_get_master_key_details_command())
+        elif command == "pan-os-get-certificate-info":
+            topology = get_topology()
+            return_results(pan_os_get_certificate_info_command(topology, args))
         else:
             raise NotImplementedError(f"Command {command} is not implemented.")
     except Exception as err:
