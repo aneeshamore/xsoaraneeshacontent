@@ -14622,6 +14622,38 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
             return "Expiring in 90 days"
         else:
             return "Valid"
+        
+    def consolidate_all_certificates(cert_list, cert_type, device: str, devices_using_certificate: Optional[List] = None):
+        if cert_type == "Pushed":
+            location = "Panorama"
+        elif cert_type == "Local":
+            location = "Firewall"
+        elif cert_type == "Predefined":
+            location = "Panorama" if DEVICE_GROUP else "Firewall"
+        else:
+            location = ""
+            
+        for cert in cert_list:
+            not_valid_after = cert.find("not-valid-after")
+            subject_elem = cert.find("subject")
+            if not_valid_after is not None and not_valid_after.text is not None:
+                cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
+                expiration_status = expiration_status_check(cert_expiration)
+            else:
+                cert_expiration = None
+                expiration_status = None
+        
+            cert_details_dict = {"name": cert.get("name"),
+                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
+                                "subject": subject_elem.text if subject_elem is not None else None,
+                                "device": device,
+                                "location": location,
+                                "expiration_status": expiration_status,
+                                "cert_type": cert_type
+                                }
+            if devices_using_certificate:
+                cert_details_dict.update({"devices_using_certificate": devices_using_certificate})
+            CERT_DETAILS.append(cert_details_dict)
 
     try:
         panorama_devices = topology.panorama_devices()
@@ -14653,30 +14685,8 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
 
                     pushed_certs = certificate.findall(".//entry") if certificate else []
                     demisto.debug(f"Found {len(pushed_certs)} pushed certificates")
-
-                    for cert in pushed_certs:
-                        not_valid_after = cert.find("not-valid-after")
-                        subject_elem = cert.find("subject")
-                        if not_valid_after is not None and not_valid_after.text is not None:
-                            cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
-                            expiration_status = expiration_status_check(cert_expiration)
-                        else:
-                            cert_expiration = None
-                            expiration_status = None
-                        CERT_DETAILS.append(
-                            {
-                                "name": cert.get("name"),
-                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
-                                "subject": subject_elem.text if subject_elem is not None else None,
-                                "device": device.hostname,
-                                "location": "Panorama",
-                                "expiration_status": expiration_status,
-                                "cert_type": "Pushed",
-                                "devices_using_certificate": devices_using_certificate[0]
-                                if len(devices_using_certificate) > 0
-                                else None,
-                            }
-                        )
+                    
+                    consolidate_all_certificates(pushed_certs, "Pushed", device.hostname, devices_using_certificate[0] if len(devices_using_certificate) > 0 else None)
 
         firewall_devices = topology.firewall_devices()
         if firewall_devices:
@@ -14690,28 +14700,8 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
                         certificate = response_pushed.find(".//certificate")
                         pushed_certs = certificate.findall(".//entry") if certificate else []
                         demisto.debug(f"Found {len(pushed_certs)} pushed certificates")
-
-                        for cert in pushed_certs:
-                            not_valid_after = cert.find("not-valid-after")
-                            subject_elem = cert.find("subject")
-                            if not_valid_after is not None and not_valid_after.text is not None:
-                                cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
-                                expiration_status = expiration_status_check(cert_expiration)
-                            else:
-                                cert_expiration = None
-                                expiration_status = None
-
-                            CERT_DETAILS.append(
-                                {
-                                    "name": cert.get("name"),
-                                    "expiration_date": not_valid_after.text if not_valid_after is not None else None,
-                                    "subject": subject_elem.text if subject_elem is not None else "",
-                                    "device": device.parent.get("hostname") if device.parent else device.serial,
-                                    "location": "Panorama",
-                                    "expiration_status": expiration_status,
-                                    "cert_type": "Pushed",
-                                }
-                            )
+                        
+                        consolidate_all_certificates(pushed_certs, "Pushed", device.parent.get("hostname") if device.parent else device.serial)
 
                 # 2. Get local certs on each firewall
                 response_local = run_op_command(device, SHOW_LOCAL_CERTS)
@@ -14720,26 +14710,8 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
                 if response_local and hasattr(response_local, "get") and response_local.get("status") == "success":
                     local_certs = response_local.findall(".//entry")
                     demisto.debug(f"Found {len(local_certs)} local certificates")
-                    for cert in local_certs:
-                        not_valid_after = cert.find("not-valid-after")
-                        subject_elem = cert.find("subject")
-                        if not_valid_after is not None and not_valid_after.text is not None:
-                            cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
-                            expiration_status = expiration_status_check(cert_expiration)
-                        else:
-                            cert_expiration = None
-                            expiration_status = None
-                        CERT_DETAILS.append(
-                            {
-                                "name": cert.get("name"),
-                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
-                                "subject": subject_elem.text if subject_elem is not None else None,
-                                "device": device.serial,
-                                "location": "Firewall",
-                                "expiration_status": expiration_status,
-                                "cert_type": "Local",
-                            }
-                        )
+                    
+                    consolidate_all_certificates(local_certs, "Local", device.serial)
 
         # 3. Get predefined certs
         params = {"type": "config", "action": "get", "xpath": PREDEFINED_CERTS_XPATH, "cmd": "show predefined", "key": API_KEY}
@@ -14749,29 +14721,8 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
             certificate = root.find(".//certificate")
             predefined_certs = certificate.findall(".//entry") if certificate else []
             demisto.debug(f"Found {len(predefined_certs)} predefined certificates")
-
-            for cert in predefined_certs:
-                not_valid_after = cert.find("not-valid-after")
-                subject_elem = cert.find("subject")
-                # Check and process certificate expiration
-                if not_valid_after is not None and not_valid_after.text is not None:
-                    cert_expiration = datetime.strptime(not_valid_after.text, "%b %d %H:%M:%S %Y %Z")
-                    expiration_status = expiration_status_check(cert_expiration)
-                else:
-                    cert_expiration = None
-                    expiration_status = None
-
-                CERT_DETAILS.append(
-                    {
-                        "name": cert.get("name"),
-                        "expiration_date": not_valid_after.text if not_valid_after is not None else None,
-                        "subject": subject_elem.text if subject_elem is not None else None,
-                        "device": URL.replace("https://", "").split(":")[0],
-                        "location": "Panorama" if DEVICE_GROUP else "Firewall",
-                        "expiration_status": expiration_status,
-                        "cert_type": "Predefined",
-                    }
-                )
+            
+            consolidate_all_certificates(predefined_certs, "Predefined", URL.replace("https://", "").split(":")[0])
 
         readable_output = tableToMarkdown(
             "Certificate Information",
@@ -14781,6 +14732,7 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
         )
         if args.get("show_expired_only"):
             CERT_DETAILS = [cert for cert in CERT_DETAILS if cert.get("expiration_status") == "Expired"]
+        
         return CommandResults(
             outputs_prefix="Panorama.Certificate",
             outputs=CERT_DETAILS,

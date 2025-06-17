@@ -1,0 +1,37 @@
+<response status="success" code="19"><result total-count="1" count="1">
+  <certificate>
+    <entry name="TLSv1.3_Default">
+      <subject-hash>f5a8ecf5</subject-hash>
+      <issuer-hash>f5a8ecf5</issuer-hash>
+      <not-valid-before>Apr 29 17:59:43 2025 GMT</not-valid-before>
+      <issuer>AWSLAB000000001</issuer>
+      <not-valid-after>Apr 29 17:59:43 2035 GMT</not-valid-after>
+      <common-name>AWSLAB000000001</common-name>
+      <expiry-epoch>2061482383</expiry-epoch>
+      <ca>no</ca>
+      <subject>AWSLAB000000001</subject>
+      <algorithm>EC</algorithm>
+      <public-key>
+-----BEGIN CERTIFICATE-----
+MIICgTCCAiegAwIBAgIUG8dZj7/SuMzv3UhkbMxaRpZo+NMwCgYIKoZIzj0EAwIw
+gZQxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xh
+cmExGzAZBgNVBAoMElBhbG8gQWx0byBOZXR3b3JrczEYMBYGA1UEAwwPQVdTTEFC
+MDAwMDAwMDAxMSswKQYJKoZIhvcNAQkBFhxzdXBwb3J0QHBhbG9hbHRvbmV0d29y
+a3MuY29tMB4XDTI1MDQyOTE3NTk0M1oXDTM1MDQyOTE3NTk0M1owgZQxCzAJBgNV
+BAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExGzAZBgNV
+BAoMElBhbG8gQWx0byBOZXR3b3JrczEYMBYGA1UEAwwPQVdTTEFCMDAwMDAwMDAx
+MSswKQYJKoZIhvcNAQkBFhxzdXBwb3J0QHBhbG9hbHRvbmV0d29ya3MuY29tMFkw
+EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEX8VisS7sO+8nslrdzh0ukA+ryMW8joVe
+jFZdOvGoX+um8coBmPzWbms7HONoPCV3dA0oeruy7SX2G4KmZktLfaNVMFMwCQYD
+VR0TBAIwADALBgNVHQ8EBAMCBeAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUF
+BwMCMBoGA1UdEQQTMBGCD0FXU0xBQjAwMDAwMDAwMTAKBggqhkjOPQQDAgNIADBF
+AiEAj5VX0dxvFummo0rjRUXMyfyVoni0y7C/hlKgaoF8Nt4CIB6WjMKAVxzo56T6
+JXHnc8O7bgeoiOj5jZCXZPCtdB2w
+-----END CERTIFICATE-----
+</public-key>
+      <private-key>dummy</private-key>
+      <common-name-int>AWSLAB000000001</common-name-int>
+      <subject-int>C = US, ST = CA, L = Santa Clara, O = Palo Alto Networks, CN = AWSLAB000000001, emailAddress = support@paloaltonetworks.com</subject-int>
+    </entry>
+  </certificate>
+</result></response>
