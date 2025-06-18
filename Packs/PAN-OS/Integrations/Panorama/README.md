@@ -10099,7 +10099,7 @@ Installs the latest GlobalProtect Clientless VPN dynamic update.
 ### pan-os-get-certificate-info
 
 ***
-Gathers name, expiration date and expiration status of certificates configured locally on a Firewall or pushed from Panorama.
+Gathers name, expiration date and expiration status of certificates configured locally on a Firewall or pushed from Panorama, as seen under Certificate Management.
 
 #### Base Command
 
