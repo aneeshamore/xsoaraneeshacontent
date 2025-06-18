@@ -57,8 +57,8 @@
     <shared>
       <certificate ptpl="AWS-Lab-FWs">
         <entry name="ACME Root CA" ptpl="AWS-Lab-FWs">
-          <subject-hash ptpl="AWS-Lab-FWs">110ea8dd</subject-hash>
-          <issuer-hash ptpl="AWS-Lab-FWs">110ea8dd</issuer-hash>
+          <subject-hash ptpl="AWS-Lab-FWs">78952463</subject-hash>
+          <issuer-hash ptpl="AWS-Lab-FWs">ajd093m5</issuer-hash>
           <not-valid-before ptpl="AWS-Lab-FWs">May  9 16:35:16 2025 GMT</not-valid-before>
           <issuer ptpl="AWS-Lab-FWs">/CN=acme-root-ca.acme.com</issuer>
           <not-valid-after ptpl="AWS-Lab-FWs">May  9 16:35:16 2026 GMT</not-valid-after>
@@ -67,22 +67,15 @@
           <ca ptpl="AWS-Lab-FWs">yes</ca>
           <subject ptpl="AWS-Lab-FWs">/CN=acme-root-ca.acme.com</subject>
           <public-key ptpl="AWS-Lab-FWs">-----BEGIN CERTIFICATE-----
-MIIBXjCCAQWgAwIBAgIUAy5ZLN3s+gOGT+WP5n3iEtYNgDswCgYIKoZIzj0EAwIw
-IDEeMBwGA1UEAwwVYWNtZS1yb290LWNhLmFjbWUuY29tMB4XDTI1MDUwOTE2MzUx
-NloXDTI2MDUwOTE2MzUxNlowIDEeMBwGA1UEAwwVYWNtZS1yb290LWNhLmFjbWUu
-Y29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEj/aQiLsJbes2e3Kqoaw1/f7i
-OZ6IvQMx9LzuZ14hiAbt64f0mUaJ4T+h6O8IU6Q5SFBkHEZjo6xP5zDsbhnLPqMd
-MBswDAYDVR0TBAUwAwEB/zALBgNVHQ8EBAMCAgQwCgYIKoZIzj0EAwIDRwAwRAIg
-BI7pWT4fGps99P5aiDx8pg3mUG9sp7VoRXaSRg3eyBUCICpV3jI593h34heO2s25
-GXNX9Qam1NpYkV/dPAHw7XDd
+HiThere
 -----END CERTIFICATE-----
 </public-key>
           <algorithm ptpl="AWS-Lab-FWs">EC</algorithm>
-          <private-key ptpl="AWS-Lab-FWs">-AQ==nO4sW1tjMTg1hGJr1K98v/KgU0I=XvXcFOkILAZdXDe37gMx2bTS/Hb6HAEBFQ++jPBphcd668F2KsTGv6DVF1zlT0jl/h6fGCxf6vP2T7LcYBNKOwRxJ9EELvPllh/Aap583G9NPiTOcQQodBFkPQ72Q3Y/wErq0btuQ8PakZon56tDlnEfUDCPVzpSNB2FRZbPGhfu/+zacgc8HzjvPIKnKCPDsHPr9lyUuCMcRZKlLzhwVEUG4Zri1q6k4zx+QlrfaruxXEsJuuG+oOWz3bbx6/mpMz5RaFZxrc9hw+fQEyi7C6ZWfJyz+bTyy0Hb+hlU3xOPX/hh+GAuto77EWDXch6O</private-key>
+          <private-key ptpl="AWS-Lab-FWs">testprivatekey1</private-key>
         </entry>
         <entry name="Decrypt Certificate" ptpl="AWS-Lab-FWs">
-          <subject-hash ptpl="AWS-Lab-FWs">ddcc12a9</subject-hash>
-          <issuer-hash ptpl="AWS-Lab-FWs">110ea8dd</issuer-hash>
+          <subject-hash ptpl="AWS-Lab-FWs">12motl05</subject-hash>
+          <issuer-hash ptpl="AWS-Lab-FWs">295hf93k</issuer-hash>
           <not-valid-before ptpl="AWS-Lab-FWs">May  9 16:36:13 2025 GMT</not-valid-before>
           <issuer ptpl="AWS-Lab-FWs">/CN=acme-root-ca.acme.com</issuer>
           <not-valid-after ptpl="AWS-Lab-FWs">May  9 16:36:13 2026 GMT</not-valid-after>
@@ -91,19 +84,11 @@ GXNX9Qam1NpYkV/dPAHw7XDd
           <ca ptpl="AWS-Lab-FWs">no</ca>
           <subject ptpl="AWS-Lab-FWs">/CN=decrypt.acme.com</subject>
           <public-key ptpl="AWS-Lab-FWs">-----BEGIN CERTIFICATE-----
-MIIBmjCCAUCgAwIBAgIEWb43pDAKBggqhkjOPQQDAjAgMR4wHAYDVQQDDBVhY21l
-LXJvb3QtY2EuYWNtZS5jb20wHhcNMjUwNTA5MTYzNjEzWhcNMjYwNTA5MTYzNjEz
-WjAbMRkwFwYDVQQDDBBkZWNyeXB0LmFjbWUuY29tMFkwEwYHKoZIzj0CAQYIKoZI
-zj0DAQcDQgAEGS4qGIbsBVOLUjsArmWi9psSHzyxw4dJ56NOCWB0ZMLmZ76krhGp
-mjgGbJK3WAG+6yHCVirqhp1nwVQCuTCtY6NtMGswCQYDVR0TBAIwADALBgNVHQ8E
-BAMCA7gwJwYDVR0lBCAwHgYIKwYBBQUHAwEGCCsGAQUFBwMCBggrBgEFBQcDBTAJ
-BgNVHSMEAjAAMB0GA1UdDgQWBBR2ilKMhjEZP3i1VuLK8u4ffpRuSzAKBggqhkjO
-PQQDAgNIADBFAiEAjeGOlJ/ay73GoOEoKP1sdNXDLvzB4juYffchMAZ5bZcCIACY
-CF8ArnXYcPBHvcgtgOOiArkZJAsyDCkJAO+shRsM
+TestCertificate
 -----END CERTIFICATE-----
 </public-key>
           <algorithm ptpl="AWS-Lab-FWs">EC</algorithm>
-          <private-key ptpl="AWS-Lab-FWs">-AQ==7U3XHsoFioTrGLf2UicRru5ETos=XvXcFOkILAZdXDe37gMx2bTS/Hb6HAEBFQ++jPBphcfNvux2dVzW/zf01uLTeaoYdge4zVTjukcZ9AuYtM08BqKB25bWLD9s/XFH1AUHlGhVEYpab1SFimppkr3ES9oLxb0GSdnJkNd3V8BhEsIpz2+D3mS4DFXt0/90Ji7+k7ORXIlJs8Et0agB9CUh0HWpMJ3eMRfvsMZvw7TiZo+yjdnXoK4FiWdgBX4nUWoRbDCbcJo8zi5TN4tfvpHfiQEWvA1BCPf0Kh0oDgCASp6avhzyIC4y2EOYleCwh6qsOqQiIekias+xVKGwozk1lLw4</private-key>
+          <private-key ptpl="AWS-Lab-FWs">testprivatekey2</private-key>
         </entry>
       </certificate>
     </shared>
