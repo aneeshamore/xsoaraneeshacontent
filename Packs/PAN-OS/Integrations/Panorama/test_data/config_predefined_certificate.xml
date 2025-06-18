@@ -4,12 +4,12 @@
       <subject-hash>125kj987</subject-hash>
       <issuer-hash>67js54g0</issuer-hash>
       <not-valid-before>Apr 29 17:59:43 2025 GMT</not-valid-before>
-      <issuer>AWSLAB000000001</issuer>
+      <issuer>TESTLAB000000001</issuer>
       <not-valid-after>Apr 29 17:59:43 2035 GMT</not-valid-after>
-      <common-name>AWSLAB000000001</common-name>
+      <common-name>TESTLAB000000001</common-name>
       <expiry-epoch>2061482383</expiry-epoch>
       <ca>no</ca>
-      <subject>AWSLAB000000001</subject>
+      <subject>TESTLAB000000001</subject>
       <algorithm>EC</algorithm>
       <public-key>
 -----BEGIN CERTIFICATE-----
@@ -17,8 +17,8 @@ TestPredefinedCertificate1
 -----END CERTIFICATE-----
 </public-key>
       <private-key>dummy</private-key>
-      <common-name-int>AWSLAB000000001</common-name-int>
-      <subject-int>C = US, ST = CA, L = Santa Clara, O = Palo Alto Networks, CN = AWSLAB000000001, emailAddress = support@paloaltonetworks.com</subject-int>
+      <common-name-int>TESTLAB000000001</common-name-int>
+      <subject-int>C = US, ST = CA, L = Santa Clara, O = Palo Alto Networks, CN = TESTLAB000000001, emailAddress = support@paloaltonetworks.com</subject-int>
     </entry>
   </certificate>
 </result></response>

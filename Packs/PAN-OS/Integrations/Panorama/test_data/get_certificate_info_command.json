@@ -53,7 +53,7 @@
     {
         "name": "TLSv1.3_Default",
         "expiration_date": "Apr 29 17:59:43 2035 GMT",
-        "subject": "AWSLAB000000001",
+        "subject": "TESTLAB000000001",
         "device": "1.1.1.1",
         "location": "Panorama",
         "expiration_status": "Valid",

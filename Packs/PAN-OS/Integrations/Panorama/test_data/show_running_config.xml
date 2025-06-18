@@ -4,7 +4,7 @@
     <config version="11.1.0" urldb="paloaltonetworks" detail-version="11.1.6">
       <mgt-config>
         <devices>
-          <entry name="007055000265377" />
+          <entry name="111111111111111" />
         </devices>
         <users>
           <entry name="admin">
