@@ -599,7 +599,7 @@ def do_pagination(
     if isinstance(entries, list) and page is not None:
         if page <= 0:
             raise DemistoException(f"page {page} must be a positive number")
-        entries = entries[(page - 1) * page_size : page_size * page]  # do pagination
+        entries = entries[(page - 1) * page_size: page_size * page]  # do pagination
     elif isinstance(entries, list):
         entries = entries[:limit]
 
@@ -12903,7 +12903,8 @@ def pan_os_edit_nat_rule_command(args):
         "audit-comment": ("audit-comment", "", False),
     }
 
-    element_to_change, object_name, is_listable = elements_to_change_mapping_pan_os_paths.get(element_to_change)  # type: ignore[misc]
+    element_to_change, object_name, is_listable = elements_to_change_mapping_pan_os_paths.get(
+        element_to_change)  # type: ignore[misc]
 
     raw_response = pan_os_edit_nat_rule(
         rule_name=rule_name,
@@ -13243,7 +13244,8 @@ def pan_os_edit_redistribution_profile_command(args):
         "filter_bgp_extended_community": ("filter/bgp/community", "extended-community", True),
     }
 
-    element_to_change, object_name, is_listable = elements_to_change_mapping_pan_os_paths.get(element_to_change)  # type: ignore[misc]
+    element_to_change, object_name, is_listable = elements_to_change_mapping_pan_os_paths.get(
+        element_to_change)  # type: ignore[misc]
 
     raw_response = pan_os_edit_redistribution_profile(
         virtual_router_name=virtual_router_name,
@@ -13577,7 +13579,8 @@ def pan_os_edit_pbf_rule_command(args):
     if element_to_change == "action_forward_discard":
         element_value = "discard"
 
-    element_to_change, object_name, is_listable = elements_to_change_mapping_pan_os_paths.get(element_to_change)  # type: ignore[misc]
+    element_to_change, object_name, is_listable = elements_to_change_mapping_pan_os_paths.get(
+        element_to_change)  # type: ignore[misc]
 
     raw_response = pan_os_edit_pbf_rule(
         rule_name=rule_name,
@@ -14889,6 +14892,7 @@ def pan_os_get_master_key_details_command() -> CommandResults:
         readable_output=human_readable,
     )
 
+
 def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> CommandResults:
     """
     Get certificate information from PAN-OS device
@@ -14917,7 +14921,7 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
             return "Expiring in 90 days"
         else:
             return "Valid"
-        
+
     def consolidate_all_certificates(cert_list, cert_type, device: str, devices_using_certificate: Optional[List] = None):
         if cert_type == "Pushed":
             location = "Panorama"
@@ -14927,7 +14931,7 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
             location = "Panorama" if DEVICE_GROUP else "Firewall"
         else:
             location = ""
-            
+
         for cert in cert_list:
             not_valid_after = cert.find("not-valid-after")
             subject_elem = cert.find("subject")
@@ -14937,15 +14941,16 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
             else:
                 cert_expiration = None
                 expiration_status = None
-        
-            cert_details_dict = {"name": cert.get("name"),
-                                "device": device,
-                                "subject": subject_elem.text if subject_elem is not None else None,
-                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
-                                "expiration_status": expiration_status,
-                                "location": location,
-                                "cert_type": cert_type
-                                }
+
+            cert_details_dict = {
+                "name": cert.get("name"),
+                "device": device,
+                "subject": subject_elem.text if subject_elem is not None else None,
+                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
+                "expiration_status": expiration_status,
+                "location": location,
+                "cert_type": cert_type,
+            }
             if devices_using_certificate:
                 cert_details_dict.update({"devices_using_certificate": devices_using_certificate})
             CERT_DETAILS.append(cert_details_dict)
@@ -14980,8 +14985,13 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
 
                     pushed_certs = certificate.findall(".//entry") if certificate else []
                     demisto.debug(f"Found {len(pushed_certs)} pushed certificates")
-                    
-                    consolidate_all_certificates(pushed_certs, "Pushed", device.hostname, devices_using_certificate[0] if len(devices_using_certificate) > 0 else None)
+
+                    consolidate_all_certificates(
+                        pushed_certs,
+                        "Pushed",
+                        device.hostname,
+                        devices_using_certificate[0] if len(devices_using_certificate) > 0 else None,
+                    )
 
         firewall_devices = topology.firewall_devices()
         if firewall_devices:
@@ -14995,8 +15005,10 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
                         certificate = response_pushed.find(".//certificate")
                         pushed_certs = certificate.findall(".//entry") if certificate else []
                         demisto.debug(f"Found {len(pushed_certs)} pushed certificates")
-                        
-                        consolidate_all_certificates(pushed_certs, "Pushed", device.parent.get("hostname") if device.parent else device.serial)
+
+                        consolidate_all_certificates(
+                            pushed_certs, "Pushed", device.parent.get("hostname") if device.parent else device.serial
+                        )
 
                 # 2. Get local certs on each firewall
                 response_local = run_op_command(device, SHOW_LOCAL_CERTS)
@@ -15005,7 +15017,7 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
                 if response_local and hasattr(response_local, "get") and response_local.get("status") == "success":
                     local_certs = response_local.findall(".//entry")
                     demisto.debug(f"Found {len(local_certs)} local certificates")
-                    
+
                     consolidate_all_certificates(local_certs, "Local", device.serial)
 
         # 3. Get predefined certs
@@ -15016,18 +15028,27 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
             certificate = root.find(".//certificate")
             predefined_certs = certificate.findall(".//entry") if certificate else []
             demisto.debug(f"Found {len(predefined_certs)} predefined certificates")
-            
+
             consolidate_all_certificates(predefined_certs, "Predefined", URL.replace("https://", "").split(":")[0])
 
         readable_output = tableToMarkdown(
             "Certificate Information",
             CERT_DETAILS,
-            headers=["name", "device", "subject", "expiration_date", "expiration_status", "location", "cert_type", "devices_using_certificate"],
+            headers=[
+                "name",
+                "device",
+                "subject",
+                "expiration_date",
+                "expiration_status",
+                "location",
+                "cert_type",
+                "devices_using_certificate",
+            ],
             removeNull=True,
         )
         if args.get("show_expired_only"):
             CERT_DETAILS = [cert for cert in CERT_DETAILS if cert.get("expiration_status") == "Expired"]
-        
+
         return CommandResults(
             outputs_prefix="Panorama.Certificate",
             outputs=CERT_DETAILS,
@@ -15036,6 +15057,7 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
         )
     except Exception as e:
         raise Exception(f"Failed to get certificate information: {str(e)}")
+
 
 """ Fetch Incidents """
 
@@ -15452,7 +15474,8 @@ def fetch_incidents(
     demisto.debug(f"last id dictionary from previous fetch is: {last_id_dict=}.")
     demisto.debug(f"last offset dictionary from previous fetch is: {offset_dict=}.")
 
-    fetch_start_datetime_dict = get_fetch_start_datetime_dict(last_fetch_dict, first_fetch, queries_dict)  # type: ignore[arg-type]
+    fetch_start_datetime_dict = get_fetch_start_datetime_dict(
+        last_fetch_dict, first_fetch, queries_dict)  # type: ignore[arg-type]
     demisto.debug(f"updated last fetch per log type: {fetch_start_datetime_dict=}.")
 
     incident_entries_dict = fetch_incidents_request(
@@ -15464,9 +15487,11 @@ def fetch_incidents(
     update_offset_dict(incident_entries_dict, last_fetch_dict, offset_dict)
 
     # remove duplicated incidents from incident_entries_dict
-    unique_incident_entries_dict = filter_fetched_entries(entries_dict=incident_entries_dict, id_dict=last_id_dict)  # type: ignore[arg-type]
+    unique_incident_entries_dict = filter_fetched_entries(
+        entries_dict=incident_entries_dict, id_dict=last_id_dict)  # type: ignore[arg-type]
 
-    parsed_incident_entries_list = get_parsed_incident_entries(unique_incident_entries_dict, last_fetch_dict, last_id_dict)  # type: ignore[arg-type]
+    parsed_incident_entries_list = get_parsed_incident_entries(
+        unique_incident_entries_dict, last_fetch_dict, last_id_dict)  # type: ignore[arg-type]
 
     new_last_run = LastRun(
         last_fetch_dict=last_fetch_dict,
@@ -15531,7 +15556,8 @@ def main():  # pragma: no cover
             fetch_max_attempts = arg_to_number(params["fetch_job_polling_max_num_attempts"])
             max_fetch = cast(MaxFetch, dict.fromkeys(queries, configured_max_fetch))
 
-            new_last_run, incident_entries = fetch_incidents(last_run, first_fetch, queries, max_fetch, fetch_max_attempts)  # type: ignore[arg-type]
+            new_last_run, incident_entries = fetch_incidents(
+                last_run, first_fetch, queries, max_fetch, fetch_max_attempts)  # type: ignore[arg-type]
 
             demisto.setLastRun(new_last_run)
             demisto.incidents(incident_entries)
