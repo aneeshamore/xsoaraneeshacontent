@@ -76,7 +76,7 @@
         </tag>
         <address>
           <entry name="Aneesha HQ IP">
-            <ip-netmask>12.25.6.4</ip-netmask>
+            <ip-netmask>2.2.2.2</ip-netmask>
             <tag>
               <member>testing</member>
             </tag>
@@ -858,7 +858,7 @@
                       <entry name="vsys1">
                         <certificate>
                           <entry name="ACME Root CA">
-                            <subject-hash>112ju808</subject-hash>
+                            <subject-hash>33333333</subject-hash>
                             <issuer-hash>aaaaaaaa</issuer-hash>
                             <not-valid-before>May  9 16:35:16 2025 GMT</not-valid-before>
                             <issuer>/CN=acme-root-ca.acme.com</issuer>
@@ -1039,8 +1039,8 @@ TestCertificate2
       <panorama>
         <certificate>
           <entry name="FW-Root-CA">
-            <subject-hash>85898774</subject-hash>
-            <issuer-hash>85898774</issuer-hash>
+            <subject-hash>9999999</subject-hash>
+            <issuer-hash>88888888</issuer-hash>
             <not-valid-before>Jun  6 23:20:20 2025 GMT</not-valid-before>
             <issuer>/CN=Test cert on firewall for panorama</issuer>
             <not-valid-after>Jun  6 23:20:20 2026 GMT</not-valid-after>
@@ -1056,7 +1056,7 @@ testcert3
             <private-key>privatetestkey3</private-key>
           </entry>
           <entry name="Panorama-client-cert">
-            <subject-hash>12121111</subject-hash>
+            <subject-hash>2222222</subject-hash>
             <issuer-hash>66666666</issuer-hash>
             <not-valid-before>Jun  6 23:30:57 2025 GMT</not-valid-before>
             <issuer>/CN=Test cert on firewall for panorama</issuer>
