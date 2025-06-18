@@ -14644,11 +14644,11 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
                 expiration_status = None
         
             cert_details_dict = {"name": cert.get("name"),
-                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
-                                "subject": subject_elem.text if subject_elem is not None else None,
                                 "device": device,
-                                "location": location,
+                                "subject": subject_elem.text if subject_elem is not None else None,
+                                "expiration_date": not_valid_after.text if not_valid_after is not None else None,
                                 "expiration_status": expiration_status,
+                                "location": location,
                                 "cert_type": cert_type
                                 }
             if devices_using_certificate:
@@ -14727,7 +14727,7 @@ def pan_os_get_certificate_info_command(topology: Topology, args: Dict) -> Comma
         readable_output = tableToMarkdown(
             "Certificate Information",
             CERT_DETAILS,
-            headers=["name", "device", "subject", "expiration", "expiration_status", "location", "cert_type"],
+            headers=["name", "device", "subject", "expiration_date", "expiration_status", "location", "cert_type", "devices_using_certificate"],
             removeNull=True,
         )
         if args.get("show_expired_only"):
